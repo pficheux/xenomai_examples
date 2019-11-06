@@ -17,6 +17,7 @@
 #include <fcntl.h>
 #include <ctype.h>
 #include <rtdm/udd.h>
+#include <native/task.h>
 
 #define NSEC_PER_SEC    1000000000
 
@@ -80,15 +81,25 @@ unsigned int test_loops = 0;    /* outer loop count */
 void *thread_irq (void *dummy)
 {
   struct udd_signotify udd_signotify;
-  int ret, v;
-
+  sigset_t set;
+  int ret, sig;
+  struct timespec timeout;
+  siginfo_t siginfo; 
+  RT_TASK_INFO info;
+	
   printf ("IRQ thread starting\n");
 
-  udd_signotify.pid = 0;
+  rt_task_inquire(NULL, &info);
+  udd_signotify.pid = info.pid;
   udd_signotify.sig = SIGRTMIN + 1;
 
+  timeout.tv_sec = 2;
+  timeout.tv_nsec = 0;
+  sigemptyset(&set);
+  sigaddset(&set, SIGRTMIN + 1);
+
   // Configure IRQ
-  if ((fd = open("/dev/rtdm/rpi_gpio", O_RDWR) < 0)) {
+  if ((fd = open("/dev/rtdm/rpi_gpio", O_RDWR)) < 0) {
     perror ("open rpi_gpio");
     exit (1);
   }
@@ -102,11 +113,11 @@ void *thread_irq (void *dummy)
   if (ret < 0)
     fprintf(stderr, "failed to enable interrupt (%d)\n", ret);
 
-  /* Get IRQ (TBC) */
+  /* Wait for IRQ (TBC) */
   while (1) {
-    printf ("%s: read() started\n", __FUNCTION__);
-    ret = read (fd, &v, 1);
-    printf ("%s: read() exited ret= %d\n", __FUNCTION__, ret);
+    // wait next IRQ
+    sig = sigtimedwait(&set, &siginfo, &timeout);
+    printf ("%s: sigtimedwait= %d!\n", __FUNCTION__, sig);
   }
 }
 
@@ -175,7 +186,7 @@ void *thread_square (void *dummy)
       jitter_avg += jitter;
       if (test_loops && (jitter > jitter_max))
 	jitter_max = jitter;
-  
+     
       if (test_loops && !(test_loops % loop_prt)) {
 	jitter_avg /= loop_prt;
 	printf ("Loop= %d sec= %ld nsec= %ld delta= %ld ns jitter cur= %ld ns avg= %ld ns max= %ld ns\n", test_loops,  tr.tv_sec, tr.tv_nsec, t-told, jitter, jitter_avg, jitter_max);
