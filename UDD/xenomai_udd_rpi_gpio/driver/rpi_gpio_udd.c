@@ -26,7 +26,7 @@ MODULE_AUTHOR("Pierre Ficheux");
 
 int irq_handler(struct udd_device *udd)
 {
-  rtdm_printk("Got IRQ !\n");
+  rtdm_printk("RTDM driver: Got IRQ () !\n");
 
   return RTDM_IRQ_HANDLED;
 }
@@ -72,6 +72,7 @@ void __exit rpi_gpio_exit(void)
 {
   rtdm_printk("RPI_GPIO RTDM, unloading\n");
   udd_unregister_device (&device);
+  gpio_free(gpio_in);
 }
 
 module_init(rpi_gpio_init);

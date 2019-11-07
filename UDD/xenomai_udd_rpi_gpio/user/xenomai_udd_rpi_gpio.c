@@ -4,6 +4,7 @@
 
 #include <sys/mman.h>
 #include <sys/time.h>
+#include <sys/types.h>
 #include <sys/io.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -17,7 +18,7 @@
 #include <fcntl.h>
 #include <ctype.h>
 #include <rtdm/udd.h>
-#include <native/task.h>
+#include <cobalt/sys/cobalt.h>
 
 #define NSEC_PER_SEC    1000000000
 
@@ -82,15 +83,15 @@ void *thread_irq (void *dummy)
 {
   struct udd_signotify udd_signotify;
   sigset_t set;
-  int ret, sig;
+  int ret, sig, pid;
   struct timespec timeout;
   siginfo_t siginfo; 
-  RT_TASK_INFO info;
-	
-  printf ("IRQ thread starting\n");
 
-  rt_task_inquire(NULL, &info);
-  udd_signotify.pid = info.pid;
+  pid = cobalt_thread_pid(pthread_self());
+  
+  printf ("IRQ thread %d starting\n", pid);
+
+  udd_signotify.pid = pid;
   udd_signotify.sig = SIGRTMIN + 1;
 
   timeout.tv_sec = 2;
@@ -117,7 +118,8 @@ void *thread_irq (void *dummy)
   while (1) {
     // wait next IRQ
     sig = sigtimedwait(&set, &siginfo, &timeout);
-    printf ("%s: sigtimedwait= %d!\n", __FUNCTION__, sig);
+    if (sig > 0)
+      printf ("%s: Got IRQ (signal = %d)\n", __FUNCTION__, sig);
   }
 }
 

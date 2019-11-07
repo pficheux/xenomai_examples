@@ -8,8 +8,8 @@ $(error Please add <xenomai-install-path>/bin to your PATH variable)
 endif
 
 CC := $(shell $(XENO_CONFIG) --skin=posix --cc)
-STD_CFLAGS  := $(shell $(XENO_CONFIG) --skin=posix --cflags) -Wall
-STD_LDFLAGS := $(shell $(XENO_CONFIG) --skin=posix --ldflags)
+STD_CFLAGS  := $(shell $(XENO_CONFIG) --posix --cflags) -Wall
+STD_LDFLAGS := $(shell $(XENO_CONFIG) --posix --ldflags)
 
 STD_TARGETS :=  xenomai_udd_rpi_gpio
 
